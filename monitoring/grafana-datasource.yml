@@ -1,4 +1,3 @@
-```yaml id="kd8h4s"
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -15,4 +14,3 @@ data:
         url: http://prometheus:9090
         isDefault: true
         editable: true
-```
