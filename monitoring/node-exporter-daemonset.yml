@@ -1,4 +1,3 @@
-```yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -55,4 +54,3 @@ spec:
         - name: root
           hostPath:
             path: /
-```
