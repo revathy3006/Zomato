@@ -92,17 +92,43 @@ pipeline {
         stage('Deploy to EKS Staging') {
             steps {
                 sh '''
+                    # Create staging namespace if it does not exist
+                    kubectl create namespace staging \
+                        --dry-run=client \
+                        -o yaml | kubectl apply -f -
+
+                    # Get ECR registry
                     AWS_ACCOUNT_ID=$(aws sts get-caller-identity \
                         --query Account \
                         --output text)
 
                     ECR_REGISTRY=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
+                    # Replace image placeholder with current Jenkins build image
                     sed -i "s|IMAGE_PLACEHOLDER|${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}|g" \
-                        Kubernetes/deployment.yaml
+                        Kubernetes/deployment.yml
 
-                    kubectl apply -f Kubernetes/deployment.yaml
-                    kubectl apply -f Kubernetes/service.yaml
+                    # Deploy Zomato
+                    kubectl apply -f Kubernetes/deployment.yml
+                    kubectl apply -f Kubernetes/service.yml
+
+                    # Create monitoring namespaces
+                    kubectl apply -f monitoring/namespace.yml
+                    kubectl apply -f monitoring/node-exporter-namespace.yml
+
+                    # Deploy Prometheus
+                    kubectl apply -f monitoring/prometheus-rbac.yml
+                    kubectl apply -f monitoring/prometheus-config.yml
+                    kubectl apply -f monitoring/prometheus-deployment.yml
+                    kubectl apply -f monitoring/prometheus-service.yml
+
+                    # Deploy Node Exporter
+                    kubectl apply -f monitoring/node-exporter-daemonset.yml
+
+                    # Deploy Grafana
+                    kubectl apply -f monitoring/grafana-datasource.yml
+                    kubectl apply -f monitoring/grafana-deployment.yml
+                    kubectl apply -f monitoring/grafana-service.yml
                 '''
             }
         }
